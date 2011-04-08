@@ -1,6 +1,14 @@
 componentconstructors['landmarks'] = function(dynmap, configuration) {
 	var markers = {};
 	
+	var link = $("<link>");
+	link.attr({
+		type: 'text/css',
+		rel: 'stylesheet',
+		href: 'css/landmarks.css'
+	});
+	$("head").append( link ); 
+	
 	$(dynmap).bind('worldupdating', function() {
 		$.getJSON('markers.json', function(data) {
 			for(i = 0; i < data.length; i++)
