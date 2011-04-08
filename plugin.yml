@@ -1,0 +1,10 @@
+name: Landmarks
+main: de.wecallit42.minecraft.landmarks.LandmarksPlugin
+version: 0.1
+
+commands:
+  landmark:
+    description: Set and remove landmarks.
+    usage: |
+           /<command> set [name]
+           /<command> del [name]
