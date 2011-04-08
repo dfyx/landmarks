@@ -1,0 +1,26 @@
+.dynmap .landmarkMarker {
+	background-image: url(../images/landmark.png);
+	width: 10px;
+    height: 10px;
+    padding: 0px;
+    margin-top: -5px;
+    margin-left: -5px;
+    position: absolute;
+    z-index: 100;
+}
+
+.dynmap .landmarkMarker .landmarkName {
+	display: none;
+	z-index: 101;
+}
+
+.dynmap .landmarkMarker:hover .landmarkName {
+	display: block;
+    background: none repeat scroll 0 0 rgba(0, 0, 0, 0.6);
+    border-radius: 3px 3px 3px 3px;
+    color: #FFFFFF;
+    padding: 2px;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+}
