@@ -14,13 +14,16 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
+import org.bukkit.plugin.Plugin;
 
 public class LandmarksPlugin extends JavaPlugin {
 	private static final String LOG_PREFIX = "[Landmarks] ";
@@ -30,6 +33,8 @@ public class LandmarksPlugin extends JavaPlugin {
 	private Logger log;
 	private Configuration configuration;
 	private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
+	
+	private PermissionHandler permissions;
 
 	public void onDisable() {
 		saveJSON();
@@ -46,6 +51,7 @@ public class LandmarksPlugin extends JavaPlugin {
 		markersFile = configuration.getString("markersfile", markersFile);
 
 		loadJSON();
+		setupPermissions();
 
 		log.info(LOG_PREFIX + "Landmarks 0.1 enabled.");
 	}
@@ -56,10 +62,12 @@ public class LandmarksPlugin extends JavaPlugin {
 		if (!command.getName().equals("landmark"))
 			return false;
 		
+		Player player = (Player) sender;
+		
 		if (args.length < 1)
 			return false;
 
-		if (args[0].equals("set")) {
+		if (args[0].equals("add")) {
 			if (args.length < 2)
 				return false;
 
@@ -68,19 +76,37 @@ public class LandmarksPlugin extends JavaPlugin {
 				name += " " + args[i];
 			}
 
-			Location location = ((Player) sender).getLocation();
+			addMarker(name, player);
+			saveJSON();
+			
+			return true;
+		} else if (args[0].equals("modify")) {
+			if (args.length < 2)
+				return false;
 
-			JSONObject marker = new JSONObject();
-			marker.put("name", (Object) name);
-			marker.put("world", location.getWorld().getName());
-			marker.put("x", location.getBlockX());
-			marker.put("y", location.getBlockY());
-			marker.put("z", location.getBlockZ());
-			marker.put("owner", ((Player) sender).getName());
-			marker.put("time", System.currentTimeMillis() / 1000);
-			markers.put(name, marker);
+			String name = args[1];
+			for (int i = 2; i < args.length; i++) {
+				name += " " + args[i];
+			}
 
-			sender.sendMessage(CHAT_PREFIX + "Marker \"" + name + "\" set.");
+			modifyMarker(name, player);
+			saveJSON();
+			
+			return true;
+		} else if (args[0].equals("set")) {
+			if (args.length < 2)
+				return false;
+
+			String name = args[1];
+			for (int i = 2; i < args.length; i++) {
+				name += " " + args[i];
+			}
+
+			if(markers.containsKey(name)) {
+				modifyMarker(name, player);
+			} else {
+				addMarker(name, player);
+			}
 			saveJSON();
 			
 			return true;
@@ -94,18 +120,94 @@ public class LandmarksPlugin extends JavaPlugin {
 				name += " " + args[i];
 			}
 
-			if (markers.containsKey(name)) {
-				markers.remove(name);
-				saveJSON();
-				sender.sendMessage(CHAT_PREFIX + "Marker \"" + name
-						+ "\" removed");
-			} else {
-				sender.sendMessage(CHAT_PREFIX + "Unknown marker \"" + name
-						+ "\"");
-			}
+			removeMarker(name, player);
+			saveJSON();
+			
 			return true;
 		}
 		return false;
+	}
+	
+	private void addMarker(String name, Player player) {
+		if(markers.containsKey(name)) {
+			player.sendMessage(CHAT_PREFIX + "There already is a marker called \"" + name + "\".");
+		} else if (hasPermission(player, "landmarks.add")) {
+			Location location = player.getLocation();
+
+			JSONObject marker = new JSONObject();
+			marker.put("name", name);
+			marker.put("world", location.getWorld().getName());
+			marker.put("x", location.getBlockX());
+			marker.put("y", location.getBlockY());
+			marker.put("z", location.getBlockZ());
+			marker.put("owner", player.getName());
+			marker.put("time", System.currentTimeMillis() / 1000);
+			markers.put(name, marker);
+			
+			player.sendMessage(CHAT_PREFIX + "Marker \"" + name + "\" added.");
+		} else {
+			player.sendMessage(CHAT_PREFIX + "You are not allowed to add new markers.");
+		}
+	}
+	
+	private void modifyMarker(String name, Player player) {
+		if (!markers.containsKey(name)) {
+			player.sendMessage(CHAT_PREFIX + "There is no marker called \""
+					+ name + "\".");
+		} else if (hasPermission(player, "landmarks.modify.all")
+				|| (markers.get(name).get("owner").equals(player.getName())
+					&& hasPermission(player, "landmarks.modify.own"))) {
+			Location location = player.getLocation();
+
+			JSONObject marker = markers.get(name);
+			marker.put("world", location.getWorld().getName());
+			marker.put("x", location.getBlockX());
+			marker.put("y", location.getBlockY());
+			marker.put("z", location.getBlockZ());
+			
+			player.sendMessage(CHAT_PREFIX + "Marker \"" + name
+					+ "\" modified.");
+		} else {
+			player.sendMessage(CHAT_PREFIX
+					+ "You are not allowed to modify marker \"" + name + "\".");
+		}
+	}
+	
+	private void removeMarker(String name, Player player) {
+		if (!markers.containsKey(name)) {
+			player.sendMessage(CHAT_PREFIX + "There is no marker called \""
+					+ name + "\".");
+		} else if (hasPermission(player, "landmarks.remove.all")
+				|| (markers.get(name).get("owner").equals(player.getName())
+					&& hasPermission(player, "landmarks.remove.own"))) {
+			markers.remove(name);
+			player.sendMessage(CHAT_PREFIX + "Marker \"" + name
+					+ "\" removed");
+		} else {
+			player.sendMessage(CHAT_PREFIX
+					+ "You are not allowed to remove marker \"" + name + "\".");
+		}
+	}
+	
+	private void setupPermissions() {
+		Plugin test = this.getServer().getPluginManager().getPlugin(
+				"Permissions");
+
+		if (permissions == null) {
+			if (test != null) {
+				permissions = ((Permissions) test).getHandler();
+			} else {
+				log.info(LOG_PREFIX + "Permission system not detected, no checks");
+			}
+		}
+	}
+	
+	private boolean hasPermission(Player player, String node) {
+		if(permissions == null) {
+			return true;
+		} else {
+			return permissions.has(player, node);
+		}
 	}
 
 	private void loadJSON() {
