@@ -43,17 +43,57 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 			markers[name]['marker'].toggle(dynmap.world.name == data.world);
 		}
 	});
+	
+	if(typeof(addSettingsPanel) == 'function')
+	{
+		addSettingsPanel('Landmarks', [
+			{'name': 'showmarkers', 'label': 'Show markers', 'type': 'checkbox', 'value': 1, 'onchange': onShowMarkers},
+			{'name': 'showtext', 'label': 'Show text', 'type': 'radio', 'value': 'Popup', 'values': ['Never', 'Popup', 'Always'], 'onchange': onShowText}
+		]);
+	}
 }
 
 function createMarker(data)
 {
 	var markerPosition = dynmap.map.getProjection().fromWorldToLatLng(data.x, data.y, data.z);
 	return new CustomMarker(markerPosition, dynmap.map, function(div) {
-			$(div)
-				.addClass('Marker')
-				.addClass('landmarkMarker')
-				.append($('<span/>')
-					.addClass('landmarkName')
-					.text(data.name));
-		});
+		$(div)
+			.addClass('Marker')
+			.addClass('landmarkMarker')
+			.append($('<span/>')
+				.addClass('landmarkName')
+				.text(data.name));
+	});
+}
+
+function onShowMarkers()
+{
+	if($(this).is(':checked'))
+	{
+		$('#mcmap').removeClass('landmarks-hidden');
 	}
+	else
+	{
+		$('#mcmap').addClass('landmarks-hidden');
+	}
+}
+
+function onShowText()
+{
+	var value = $(this).parent().find('input:checked').val();
+	switch(value)
+	{
+		case 'Never':
+			$('#mcmap').removeClass('landmarks-text-always');
+			$('#mcmap').addClass('landmarks-text-never');
+			break;
+		case 'Popup':
+			$('#mcmap').removeClass('landmarks-text-always');
+			$('#mcmap').removeClass('landmarks-text-never');
+			break;
+		case 'Always':
+			$('#mcmap').addClass('landmarks-text-always');
+			$('#mcmap').removeClass('landmarks-text-never');
+			break;
+	}
+}

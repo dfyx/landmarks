@@ -14,7 +14,8 @@
 	z-index: 101;
 }
 
-.dynmap .landmarkMarker:hover .landmarkName {
+.dynmap .landmarkMarker:hover .landmarkName,
+.landmarks-text-always .landmarkMarker .landmarkName {
 	display: block;
     background: none repeat scroll 0 0 rgba(0, 0, 0, 0.6);
     border-radius: 3px 3px 3px 3px;
@@ -23,4 +24,12 @@
     position: absolute;
     top: 8px;
     left: 8px;
+}
+
+.landmarks-text-never .landmarkMarker:hover .landmarkName {
+	display: none;
+}
+
+.landmarks-hidden .landmarkMarker {
+	display: none;
 }
