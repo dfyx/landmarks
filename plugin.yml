@@ -6,5 +6,6 @@ commands:
   landmark:
     description: Set and remove landmarks.
     usage: |
+           /<command> add [name]
            /<command> set [name]
            /<command> del [name]
