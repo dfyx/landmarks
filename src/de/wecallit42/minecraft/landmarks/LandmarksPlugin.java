@@ -16,6 +16,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -53,7 +54,8 @@ public class LandmarksPlugin extends JavaPlugin {
 		loadJSON();
 		setupPermissions();
 
-		log.info(LOG_PREFIX + "Landmarks 0.1 enabled.");
+		PluginDescriptionFile pdfFile = getDescription();
+		log.info(LOG_PREFIX + "Landmarks " + pdfFile.getVersion() + " enabled.");
 	}
 
 	@Override
