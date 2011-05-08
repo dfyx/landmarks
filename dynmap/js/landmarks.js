@@ -11,12 +11,18 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 	
 	$(dynmap).bind('worldupdating', function() {
 		$.getJSON('markers.json', function(data) {
+			// Set all markers to outdated
+			$.each(markers, function(key, value) {
+				markers[key]['outdated'] = true;
+			});
+			
 			for(i = 0; i < data.length; i++)
 			{
 				var name = data[i].name;
 				if(markers[name])
 				{
 					var markerPosition = dynmap.map.getProjection().fromWorldToLatLng(data[i].x, data[i].y, data[i].z);
+					markers[name]['outdated'] = false;
 					markers[name]['marker'].setPosition(markerPosition);
 					markers[name]['data'] = data[i];
 					markers[name]['marker'].toggle(dynmap.world.name == data[i].world);
@@ -30,7 +36,14 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 				}
 			}
 			
-			// TODO remove markers
+			// Remove markers that are still outdated
+			$.each(markers, function(key, value) {
+				if(markers[key]['outdated'] === true)
+				{
+					markers[key]['marker'].remove();
+					delete markers[key];
+				}
+			});
 		});
 	});
 	
