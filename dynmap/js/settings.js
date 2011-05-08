@@ -1,4 +1,12 @@
 componentconstructors['settings'] = function(dynmap, configuration) {
+	var link = $("<link>");
+	link.attr({
+		type: 'text/css',
+		rel: 'stylesheet',
+		href: 'css/settings.css'
+	});
+	$("head").append( link ); 
+	
 	$('.playerlist').css('height', 'auto');
 };
 
@@ -36,7 +44,7 @@ function addSettingsPanel(name, properties)
 
 function addSettingsCheckbox(fieldset, property)
 {
-	var str = '<div><input type="checkbox" id="' + property.id + '" name="' + name + '"';
+	var str = '<div class="settings-checkbox-container"><input type="checkbox" id="' + property.id + '" name="' + name + '"';
 	if(property.value)
 	{
 		str += ' checked="checked"';
@@ -52,7 +60,7 @@ function addSettingsCheckbox(fieldset, property)
 
 function addSettingsRadio(fieldset, property)
 {
-	var str = '<div id="' + property.id + '">';
+	var str = '<div id="' + property.id + '" class="settings-radio-container">';
 	if(property.label)
 	{
 		str += '<label for="' + property.id + '">' + property.label + '</label>';

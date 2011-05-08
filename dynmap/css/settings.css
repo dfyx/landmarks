@@ -1,0 +1,10 @@
+.settings-radio-container > label {
+	display: block;
+    clear: both;
+
+    width: 100%;
+    line-height: 18px;
+    margin: 10px 0 0 0;
+
+    border-bottom: 1px solid rgba(128,128,128,0.3);
+}
