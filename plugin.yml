@@ -8,4 +8,5 @@ commands:
     usage: |
            /<command> add [name]
            /<command> set [name]
+           /<command> type [type]
            /<command> del [name]

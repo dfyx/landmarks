@@ -72,6 +72,7 @@ function createMarker(data)
 	return new CustomMarker(markerPosition, dynmap.map, function(div) {
 		$(div)
 			.addClass('Marker')
+			.addClass('icon'+data.type)
 			.addClass('landmarkMarker')
 			.append($('<span/>')
 				.addClass('landmarkName')

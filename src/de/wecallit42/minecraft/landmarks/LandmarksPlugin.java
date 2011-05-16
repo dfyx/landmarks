@@ -31,6 +31,7 @@ public class LandmarksPlugin extends JavaPlugin {
 	private static final String CHAT_PREFIX = "[Landmarks] ";
 
 	private String markersFile = "markers.json";
+	private String type = "Default";
 	private Logger log;
 	private Configuration configuration;
 	private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
@@ -78,10 +79,21 @@ public class LandmarksPlugin extends JavaPlugin {
 				name += " " + args[i];
 			}
 
-			addMarker(name, player);
+			addMarker(name, this.type, player);
 			saveJSON();
 			
 			return true;
+		} else if (args[0].equals("type")) {
+			if (args.length < 2) {
+				this.type = "Default";
+			} else {
+				this.type = args[1];
+			}
+			
+			player.sendMessage(CHAT_PREFIX + "Marker type set to \"" + this.type + "\".");
+			
+			return true;
+		
 		} else if (args[0].equals("modify")) {
 			if (args.length < 2)
 				return false;
@@ -107,7 +119,7 @@ public class LandmarksPlugin extends JavaPlugin {
 			if(markers.containsKey(name)) {
 				modifyMarker(name, player);
 			} else {
-				addMarker(name, player);
+				addMarker(name, this.type, player);
 			}
 			saveJSON();
 			
@@ -130,7 +142,7 @@ public class LandmarksPlugin extends JavaPlugin {
 		return false;
 	}
 	
-	private void addMarker(String name, Player player) {
+	private void addMarker(String name, String type, Player player) {
 		if(markers.containsKey(name)) {
 			player.sendMessage(CHAT_PREFIX + "There already is a marker called \"" + name + "\".");
 		} else if (hasPermission(player, "landmarks.add")) {
@@ -144,9 +156,10 @@ public class LandmarksPlugin extends JavaPlugin {
 			marker.put("z", location.getBlockZ());
 			marker.put("owner", player.getName());
 			marker.put("time", System.currentTimeMillis() / 1000);
+			marker.put("type", type);
 			markers.put(name, marker);
 			
-			player.sendMessage(CHAT_PREFIX + "Marker \"" + name + "\" added.");
+			player.sendMessage(CHAT_PREFIX + type + " Marker \"" + name + "\" added.");
 		} else {
 			player.sendMessage(CHAT_PREFIX + "You are not allowed to add new markers.");
 		}
