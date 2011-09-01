@@ -1,37 +1,15 @@
 .dynmap .landmarkMarker {
-    padding: 0px;
-    position: absolute;
-    z-index: 100;
-}
-
-/* Add your own marker types in the same way as the ones below */
-.dynmap .iconDefault {
-	background-image: url(../images/landmark.png);
-	width: 14px;
-    height: 14px;
-    margin-top: -7px;
-    margin-left: -7px;
-}
-
-.dynmap .iconCastle {
-	background-image: url(../images/castle.png);
-	width: 24px;
-    height: 21px;
-    margin-top: -12px;
-    margin-left: -10px;
-}
-
-.dynmap .iconGate {
-	background-image: url(../images/stargate.png);
-	width: 24px;
-    height: 24px;
-    margin-top: -12px;
-    margin-left: -12px;
+  width: 14px;
+  height: 14px;
+  padding: 0px;
+  margin-top: -7px;
+  margin-left: -7px;
+  position: absolute;
+  background-image:url(../images/landmark_default.png);
 }
 
 .dynmap .landmarkMarker .landmarkName {
 	display: none;
-	z-index: 101;
 }
 
 .dynmap .landmarkMarker:hover .landmarkName,
@@ -40,10 +18,11 @@
     background: none repeat scroll 0 0 rgba(0, 0, 0, 0.6);
     border-radius: 3px 3px 3px 3px;
     color: #FFFFFF;
-    padding: 2px;
+    padding: 4px;
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: 8px;
+    left: 18px;
+    white-space:nowrap;
 }
 
 .landmarks-text-never .landmarkMarker:hover .landmarkName {
@@ -52,4 +31,24 @@
 
 .landmarks-hidden .landmarkMarker {
 	display: none;
+}
+
+.landmarklist{
+  max-height:200px;
+  overflow:auto;
+  list-style-type: none;
+  padding:0px;
+  margin:0px;
+}
+.landmarklist li{
+  line-height:14px;
+  overflow-x:hidden;
+  cursor:pointer;
+  background-image:url(../images/landmark_default.png);
+  background-repeat:no-repeat;
+  background-position: 0px 0px;
+  padding-left:20px!important;
+}
+.landmarklist li:hover{
+  color:red;
 }
