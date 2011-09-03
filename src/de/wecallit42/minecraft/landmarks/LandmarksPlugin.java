@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -27,252 +28,415 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import org.bukkit.plugin.Plugin;
 
 public class LandmarksPlugin extends JavaPlugin {
-	private static final String LOG_PREFIX = "[Landmarks] ";
-	private static final String CHAT_PREFIX = "[Landmarks] ";
+  private static final String LOG_PREFIX = "[Landmarks] ";
+  private static final String CHAT_PREFIX = "[Landmarks] ";
 
-	private String markersFile = "markers.json";
-	private String type = "Default";
-	private Logger log;
-	private Configuration configuration;
-	private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
-	
-	private PermissionHandler permissions;
+  private String markersFile = "markers.json";
+  private Logger log;
+  private Configuration configuration;
+  private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
 
-	public void onDisable() {
-		saveJSON();
+  private PermissionHandler permissions;
 
-		log.info(LOG_PREFIX + "Landmarks disabled.");
-	}
+  public void onDisable() {
+    saveJSON();
 
-	public void onEnable() {
-		log = Logger.getLogger("Minecraft");
+    log.info(LOG_PREFIX + "Landmarks disabled.");
+  }
 
-		configuration = new Configuration(new File(this.getDataFolder(),
-				"config.yml"));
-		configuration.load();
-		markersFile = configuration.getString("markersfile", markersFile);
+  public void onEnable() {
+    log = Logger.getLogger("Minecraft");
 
-		loadJSON();
-		setupPermissions();
+    configuration = new Configuration(new File(this.getDataFolder(),
+        "config.yml"));
+    configuration.load();
+    markersFile = configuration.getString("markersfile", markersFile);
 
-		PluginDescriptionFile pdfFile = getDescription();
-		log.info(LOG_PREFIX + "Landmarks " + pdfFile.getVersion() + " enabled.");
-	}
+    loadJSON();
+    setupPermissions();
 
-	@Override
-	public boolean onCommand(CommandSender sender, Command command,
-			String commandLabel, String[] args) {
-		if (!command.getName().equals("landmark"))
-			return false;
-		
-		Player player = (Player) sender;
-		
-		if (args.length < 1)
-			return false;
+    PluginDescriptionFile pdfFile = getDescription();
+    log.info(LOG_PREFIX + "Landmarks " + pdfFile.getVersion() + " enabled.");
+  }
 
-		if (args[0].equals("add")) {
-			if (args.length < 2)
-				return false;
+  @Override
+  public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
+    if (command.getName().equals("landmark")){
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(CHAT_PREFIX + "This command cannot be used from the console");
+        return true;
+      }
+      Player player = (Player) sender;
+      if (args.length < 1){return false;}
+      //build landmark name from args 0+
+      String name = args[0];
+      for (int i = 1; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canEdit(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to modify \""+name+"\".");
+          return true;
+        }
+        JSONObject marker = markers.get(name);
+        setProperty(marker, "world", player.getLocation().getWorld().getName());
+        setProperty(marker, "x", player.getLocation().getBlockX());
+        setProperty(marker, "y", player.getLocation().getBlockY());
+        setProperty(marker, "z", player.getLocation().getBlockZ());
+        saveJSON();
+        player.sendMessage(CHAT_PREFIX + "Landmark location for \""+name+"\" updated.");
+      }else{
+        if (!canCreate(sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to add landmarks.");
+          return true;
+        }
+        JSONObject marker = new JSONObject();
+        setProperty(marker, "name", name);
+        setProperty(marker, "world", player.getLocation().getWorld().getName());
+        setProperty(marker, "x", player.getLocation().getBlockX());
+        setProperty(marker, "y", player.getLocation().getBlockY());
+        setProperty(marker, "z", player.getLocation().getBlockZ());
+        setProperty(marker, "owner", player.getName());
+        setProperty(marker, "type", "Default");
+        markers.put(name, marker);
+        saveJSON();
+        player.sendMessage(CHAT_PREFIX + "New default-type landmark \""+name+"\" created.");
+      }
+      return true;
+    }
 
-			String name = args[1];
-			for (int i = 2; i < args.length; i++) {
-				name += " " + args[i];
-			}
+    if (command.getName().equals("landmarktyped")){
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(CHAT_PREFIX + "This command cannot be used from the console");
+        return true;
+      }
+      Player player = (Player) sender;
+      if (args.length < 2){return false;}
+      String type = args[0];
+      //build landmark name from args 1+
+      String name = args[1];
+      for (int i = 2; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canEdit(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to modify \""+name+"\".");
+          return true;
+        }
+        JSONObject marker = markers.get(name);
+        setProperty(marker, "world", player.getLocation().getWorld().getName());
+        setProperty(marker, "x", player.getLocation().getBlockX());
+        setProperty(marker, "y", player.getLocation().getBlockY());
+        setProperty(marker, "z", player.getLocation().getBlockZ());
+        setProperty(marker, "type", type);
+        saveJSON();
+        player.sendMessage(CHAT_PREFIX + "Landmark location and type for \""+name+"\" updated.");
+      }else{
+        if (!canCreate(sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to add landmarks.");
+          return true;
+        }
+        JSONObject marker = new JSONObject();
+        setProperty(marker, "name", name);
+        setProperty(marker, "world", player.getLocation().getWorld().getName());
+        setProperty(marker, "x", player.getLocation().getBlockX());
+        setProperty(marker, "y", player.getLocation().getBlockY());
+        setProperty(marker, "z", player.getLocation().getBlockZ());
+        setProperty(marker, "owner", player.getName());
+        setProperty(marker, "type", type);
+        markers.put(name, marker);
+        saveJSON();
+        player.sendMessage(CHAT_PREFIX + "New "+type+"-type landmark \""+name+"\" created.");
+      }
+      return true;
+    }
+    if (command.getName().equals("landmarksettype")){
+      if (args.length < 2){return false;}
+      String type = args[0];
+      //build landmark name from args 1+
+      String name = args[1];
+      for (int i = 2; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canEdit(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to modify \""+name+"\".");
+          return true;
+        }
+        JSONObject marker = markers.get(name);
+        setProperty(marker, "type", type);
+        saveJSON();
+        sender.sendMessage(CHAT_PREFIX + "Landmark \""+name+"\" type updated to \""+type+"\".");
+      }else{
+        sender.sendMessage(CHAT_PREFIX + "No such landmark: "+name);
+        return true;
+      }
+      return true;
+    }
+    if (command.getName().equals("landmarklist")){
+      for (Object obj : markers.values()) {
+        JSONObject marker = (JSONObject) obj;
+        sender.sendMessage(CHAT_PREFIX + "["+marker.get("type").toString()+"] "+marker.get("name").toString()+" at ("+marker.get("x").toString()+", "+marker.get("y").toString()+", "+marker.get("z").toString()+")");
+      }
+      return true;
+    }
+    if (command.getName().equals("landmarkdelete")){
+      if (args.length < 1){return false;}
+      //build landmark name from args 0+
+      String name = args[0];
+      for (int i = 1; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canEdit(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to modify \""+name+"\".");
+          return true;
+        }
+        markers.remove(name);
+        saveJSON();
+        sender.sendMessage(CHAT_PREFIX + "Landmark \""+name+"\" deleted.");
+      }else{
+        sender.sendMessage(CHAT_PREFIX + "No such landmark: "+name);
+        return true;
+      }
+      return true;
+    }
+    if (command.getName().equals("landmarklook")){
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(CHAT_PREFIX + "This command cannot be used from the console");
+        return true;
+      }
+      Player player = (Player) sender;
+      if (args.length < 1){return false;}
+      //build landmark name from args 0+
+      String name = args[0];
+      for (int i = 1; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canLook(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to do that.");
+          return true;
+        }
+        JSONObject marker = markers.get(name);
+        player.teleport(lookAt(player.getLocation(), Double.parseDouble(marker.get("x").toString()), Double.parseDouble(marker.get("y").toString()), Double.parseDouble(marker.get("z").toString())));
+      }else{
+        sender.sendMessage(CHAT_PREFIX + "No such landmark: "+name);
+        return true;
+      }
+      return true;
+    }
+    if (command.getName().equals("landmarkwarp")){
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(CHAT_PREFIX + "This command cannot be used from the console");
+        return true;
+      }
+      Player player = (Player) sender;
+      if (args.length < 1){return false;}
+      //build landmark name from args 0+
+      String name = args[0];
+      for (int i = 1; i < args.length; i++){name += " " + args[i];}
+      if (isMarker(name)){
+        if (!canWarp(name, sender)){
+          sender.sendMessage(CHAT_PREFIX + "You are not allowed to do that.");
+          return true;
+        }
+        JSONObject marker = markers.get(name);
+        player.teleport(new Location(Bukkit.getWorld(marker.get("world").toString()), Double.parseDouble(marker.get("x").toString()), Double.parseDouble(marker.get("y").toString()), Double.parseDouble(marker.get("z").toString())));
+      }else{
+        sender.sendMessage(CHAT_PREFIX + "No such landmark: "+name);
+        return true;
+      }
+      return true;
+    }
 
-			addMarker(name, this.type, player);
-			saveJSON();
-			
-			return true;
-		} else if (args[0].equals("type")) {
-			if (args.length < 2) {
-				this.type = "Default";
-			} else {
-				this.type = args[1];
-			}
-			
-			player.sendMessage(CHAT_PREFIX + "Marker type set to \"" + this.type + "\".");
-			
-			return true;
-		
-		} else if (args[0].equals("modify")) {
-			if (args.length < 2)
-				return false;
 
-			String name = args[1];
-			for (int i = 2; i < args.length; i++) {
-				name += " " + args[i];
-			}
 
-			modifyMarker(name, player);
-			saveJSON();
-			
-			return true;
-		} else if (args[0].equals("set")) {
-			if (args.length < 2)
-				return false;
 
-			String name = args[1];
-			for (int i = 2; i < args.length; i++) {
-				name += " " + args[i];
-			}
+    return false;
+  }
 
-			if(markers.containsKey(name)) {
-				modifyMarker(name, player);
-			} else {
-				addMarker(name, this.type, player);
-			}
-			saveJSON();
-			
-			return true;
-		} else if (args[0].equals("del") || args[0].equals("delete")
-				|| args[0].equals("remove")) {
-			if (args.length < 2)
-				return false;
 
-			String name = args[1];
-			for (int i = 2; i < args.length; i++) {
-				name += " " + args[i];
-			}
+  private boolean isMarker(String name) {
+    return (markers.containsKey(name));
+  }
 
-			removeMarker(name, player);
-			saveJSON();
-			
-			return true;
-		}
-		return false;
-	}
-	
-	private void addMarker(String name, String type, Player player) {
-		if(markers.containsKey(name)) {
-			player.sendMessage(CHAT_PREFIX + "There already is a marker called \"" + name + "\".");
-		} else if (hasPermission(player, "landmarks.add")) {
-			Location location = player.getLocation();
+  private boolean canEdit(String name, CommandSender sender) {
+    if (!markers.containsKey(name)){return false;}
+    if (hasPermission(sender, "landmarks.modify.all")){return true;}
+    if (hasPermission(sender, "landmarks.modify."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.modify.own")){return true;}
+    return false;
+  }
 
-			JSONObject marker = new JSONObject();
-			marker.put("name", name);
-			marker.put("world", location.getWorld().getName());
-			marker.put("x", location.getBlockX());
-			marker.put("y", location.getBlockY());
-			marker.put("z", location.getBlockZ());
-			marker.put("owner", player.getName());
-			marker.put("time", System.currentTimeMillis() / 1000);
-			marker.put("type", type);
-			markers.put(name, marker);
-			
-			player.sendMessage(CHAT_PREFIX + type + " Marker \"" + name + "\" added.");
-		} else {
-			player.sendMessage(CHAT_PREFIX + "You are not allowed to add new markers.");
-		}
-	}
-	
-	private void modifyMarker(String name, Player player) {
-		if (!markers.containsKey(name)) {
-			player.sendMessage(CHAT_PREFIX + "There is no marker called \""
-					+ name + "\".");
-		} else if (hasPermission(player, "landmarks.modify.all")
-				|| (markers.get(name).get("owner").equals(player.getName())
-					&& hasPermission(player, "landmarks.modify.own"))) {
-			Location location = player.getLocation();
+  private boolean canLook(String name, CommandSender sender) {
+    if (!markers.containsKey(name)){return false;}
+    if (hasPermission(sender, "landmarks.look.all")){return true;}
+    if (hasPermission(sender, "landmarks.look."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.look.own")){return true;}
+    return false;
+  }
 
-			JSONObject marker = markers.get(name);
-			marker.put("world", location.getWorld().getName());
-			marker.put("x", location.getBlockX());
-			marker.put("y", location.getBlockY());
-			marker.put("z", location.getBlockZ());
-			
-			player.sendMessage(CHAT_PREFIX + "Marker \"" + name
-					+ "\" modified.");
-		} else {
-			player.sendMessage(CHAT_PREFIX
-					+ "You are not allowed to modify marker \"" + name + "\".");
-		}
-	}
-	
-	private void removeMarker(String name, Player player) {
-		if (!markers.containsKey(name)) {
-			player.sendMessage(CHAT_PREFIX + "There is no marker called \""
-					+ name + "\".");
-		} else if (hasPermission(player, "landmarks.remove.all")
-				|| (markers.get(name).get("owner").equals(player.getName())
-					&& hasPermission(player, "landmarks.remove.own"))) {
-			markers.remove(name);
-			player.sendMessage(CHAT_PREFIX + "Marker \"" + name
-					+ "\" removed");
-		} else {
-			player.sendMessage(CHAT_PREFIX
-					+ "You are not allowed to remove marker \"" + name + "\".");
-		}
-	}
-	
-	private void setupPermissions() {
-		Plugin test = this.getServer().getPluginManager().getPlugin(
-				"Permissions");
+  private boolean canWarp(String name, CommandSender sender) {
+    if (!markers.containsKey(name)){return false;}
+    if (hasPermission(sender, "landmarks.warp.all")){return true;}
+    if (hasPermission(sender, "landmarks.warp."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.warp.own")){return true;}
+    return false;
+  }
 
-		if (permissions == null) {
-			if (test != null) {
-				permissions = ((Permissions) test).getHandler();
-			} else {
-				log.info(LOG_PREFIX + "Permission system not detected, no checks");
-			}
-		}
-	}
-	
-	private boolean hasPermission(Player player, String node) {
-		if(permissions == null) {
-			return true;
-		} else {
-			return permissions.has(player, node);
-		}
-	}
+  private boolean canCreate(CommandSender sender) {
+    if (hasPermission(sender, "landmarks.add")){return true;}
+    return false;
+  }
 
-	private void loadJSON() {
-		JSONParser parser = new JSONParser();
-		try {
-			File file = new File(markersFile);
-			if (!file.isAbsolute()) {
-				file = new File(getDataFolder(), markersFile);
-			}
+  @SuppressWarnings("unchecked") //prevent warning for j.put()
+  private void setProperty(JSONObject j, String property, Object value){
+    j.put(property, value);
+  }
 
-			log.info(LOG_PREFIX + "Loading " + file.getAbsolutePath());
+  private void setupPermissions() {
+    Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
 
-			BufferedReader reader = new BufferedReader(new FileReader(file));
-			JSONArray data = (JSONArray) parser.parse(reader);
-			for (Object obj : data) {
-				JSONObject marker = (JSONObject) obj;
-				markers.put((String) marker.get("name"), marker);
-			}
-			reader.close();
+    if (permissions == null) {
+      if (test != null) {
+        permissions = ((Permissions) test).getHandler();
+      } else {
+        log.info(LOG_PREFIX + "Permission system not detected, no checks");
+      }
+    }
+  }
 
-			log.info(LOG_PREFIX + "Successfully loaded " + markers.size()
-					+ " markers.");
-		} catch (FileNotFoundException ex) {
-			// Assume empty markers file
-		} catch (ParseException ex) {
-			log.severe(LOG_PREFIX + "The markers file has errors.");
-		} catch (IOException ex) {
-			log.severe(LOG_PREFIX + "Error reading markers file.");
-		}
-	}
+  private boolean hasPermission(CommandSender sender, String node) {
+    if (!(sender instanceof Player)) {
+      //console has all permissions, always
+      return true;
+    }
+    if(permissions == null) {
+      return true;
+    } else {
+      return permissions.has((Player)sender, node);
+    }
+  }
 
-	private void saveJSON() {
-		File file = new File(markersFile);
-		if (!file.isAbsolute()) {
-			file = new File(getDataFolder(), markersFile);
-		}
+  private void loadJSON() {
+    JSONParser parser = new JSONParser();
+    try {
+      File file = new File(markersFile);
+      if (!file.isAbsolute()) {
+        file = new File(getDataFolder(), markersFile);
+      }
 
-		JSONArray data = new JSONArray();
-		for (JSONObject marker : markers.values()) {
-			data.add(marker);
-		}
+      log.info(LOG_PREFIX + "Loading " + file.getAbsolutePath());
 
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-			writer.write(data.toString());
-			writer.close();
+      BufferedReader reader = new BufferedReader(new FileReader(file));
+      JSONArray data = (JSONArray) parser.parse(reader);
+      for (Object obj : data) {
+        JSONObject marker = (JSONObject) obj;
+        if (!marker.containsKey("type")){
+          setProperty(marker, "type", "Default");
+        }
+        if (marker.containsKey("name")){
+          markers.put((String) marker.get("name"), marker);
+        }
+      }
+      reader.close();
 
-			log.info(LOG_PREFIX + "Saved " + file.getAbsolutePath());
-		} catch (IOException e) {
-			log.severe(LOG_PREFIX + "Error writing markers file.");
-		}
-	}
+      log.info(LOG_PREFIX + "Successfully loaded " + markers.size()
+          + " markers.");
+    } catch (FileNotFoundException ex) {
+      // Assume empty markers file
+    } catch (ParseException ex) {
+      log.severe(LOG_PREFIX + "The markers file has errors.");
+    } catch (IOException ex) {
+      log.severe(LOG_PREFIX + "Error reading markers file.");
+    }
+  }
+
+  @SuppressWarnings("unchecked") //prevent eclipse whining about data.add()
+
+  private void saveJSON() {
+    File file = new File(markersFile);
+    if (!file.isAbsolute()) {
+      file = new File(getDataFolder(), markersFile);
+    }
+
+    JSONArray data = new JSONArray();
+    for (JSONObject marker : markers.values()) {
+      data.add(marker);
+    }
+
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+      writer.write(data.toString());
+      writer.close();
+
+      log.info(LOG_PREFIX + "Saved " + file.getAbsolutePath());
+    } catch (IOException e) {
+      log.severe(LOG_PREFIX + "Error writing markers file.");
+    }
+  }
+
+  //lookAt function by bergerkiller
+  public static Location lookAt(Location loc, Location lookat) {
+    //Clone the loc to prevent applied changes to the input loc
+    loc = loc.clone();
+
+    // Values of change in distance (make it relative)
+    double dx = lookat.getX() - loc.getX();
+    double dy = lookat.getY() - loc.getY();
+    double dz = lookat.getZ() - loc.getZ();
+
+    // Set yaw
+    if (dx != 0) {
+      // Set yaw start value based on dx
+      if (dx < 0) {
+        loc.setYaw((float) (1.5 * Math.PI));
+      } else {
+        loc.setYaw((float) (0.5 * Math.PI));
+      }
+      loc.setYaw((float) loc.getYaw() - (float) Math.atan(dz / dx));
+    } else if (dz < 0) {
+      loc.setYaw((float) Math.PI);
+    }
+
+    // Get the distance from dx/dz
+    double dxz = Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2));
+
+    // Set pitch
+    loc.setPitch((float) -Math.atan(dy / dxz));
+
+    // Set values, convert to degrees (invert the yaw since Bukkit uses a different yaw dimension format)
+    loc.setYaw(-loc.getYaw() * 180f / (float) Math.PI);
+    loc.setPitch(loc.getPitch() * 180f / (float) Math.PI);
+
+    return loc;
+  }
+
+  //lookAt function by bergerkiller
+  public static Location lookAt(Location loc, double dx, double dy, double dz) {
+    //Clone the loc to prevent applied changes to the input loc
+    loc = loc.clone();
+
+    // Values of change in distance (make it relative)
+    dx -= loc.getX();
+    dy -= loc.getY();
+    dz -= loc.getZ();
+
+    // Set yaw
+    if (dx != 0) {
+      // Set yaw start value based on dx
+      if (dx < 0) {
+        loc.setYaw((float) (1.5 * Math.PI));
+      } else {
+        loc.setYaw((float) (0.5 * Math.PI));
+      }
+      loc.setYaw((float) loc.getYaw() - (float) Math.atan(dz / dx));
+    } else if (dz < 0) {
+      loc.setYaw((float) Math.PI);
+    }
+
+    // Get the distance from dx/dz
+    double dxz = Math.sqrt(Math.pow(dx, 2) + Math.pow(dz, 2));
+
+    // Set pitch
+    loc.setPitch((float) -Math.atan(dy / dxz));
+
+    // Set values, convert to degrees (invert the yaw since Bukkit uses a different yaw dimension format)
+    loc.setYaw(-loc.getYaw() * 180f / (float) Math.PI);
+    loc.setPitch(loc.getPitch() * 180f / (float) Math.PI);
+
+    return loc;
+  }
+
 }
