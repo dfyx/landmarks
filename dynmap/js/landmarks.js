@@ -1,5 +1,24 @@
+//Changelog:
+//
+//ThulinmaVersion 0.4:
+//- Added support for mixed icon sizes.
+//- Added support for sublists of types.
+//- Added support for toggling sublists on/off by clicking the sublist title.
+//
+//ThulinmaVersion 0.3: (not publicly released)
+//- Fixed landmarks not disappearing when deleted.
+//- Fixed landmarklist updating only after a few seconds when switching worlds.
+//
+//ThulinmaVersion 0.2:
+//- Added icon support
+//- Landmark list now sorted.
+//
+//ThulinmaVersion 0.1:
+//- First release
+
 componentconstructors['landmarks'] = function(dynmap, configuration) {
 	var markers = {};
+  var toggled = {};
 
 	var link = $("<link>");
 	link.attr({
@@ -8,6 +27,10 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 		href: 'css/landmarks.css'
 	});
 	$("head").append( link );
+
+  $(".landmarktypename").live("click", function(){
+    landmarkToggle($(this).text());
+  });
 
   $(dynmap).bind('worldupdating', function() {
     $.getJSON('markers.json', function(data) {
@@ -36,26 +59,9 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
         if (dynmap.world.name == data[i].world){
           var markerPosition = dynmap.getProjection().fromLocationToLatLng(new Location(data[i].world, data[i].x, data[i].y, data[i].z));
           markers[name]['marker'].setLatLng(markerPosition);
-          dynmap.map.addLayer(markers[name]['marker']);
-          if ($(".landmarklist li[name=\""+data[i].name+"\"]").length == 0){
-            if (!data[i].type){data[i].type = "Default";}
-            var lastelem = $(".landmarklist").children().first();
-            var appendIt = false;
-            while ((lastelem.length > 0) && (lastelem.text().toLowerCase() < data[i].name.toLowerCase())){
-              lastelem = lastelem.next();
-            }
-            if (lastelem.length == 0){appendIt = true;}
-            if (appendIt){
-              $("<li name=\""+data[i].name+"\" />").css("background-image", "url(images/landmark_"+data[i].type.toLowerCase()+".png)").text(data[i].name).click(gotoLandmark).appendTo(".landmarklist");
-            }else{
-              $("<li name=\""+data[i].name+"\" />").css("background-image", "url(images/landmark_"+data[i].type.toLowerCase()+".png)").text(data[i].name).click(gotoLandmark).insertBefore(lastelem);
-            }
-          }
+         landmarkShow(markers[name]);
         }else{
-          $(".landmarklist li[name=\""+data[i].name+"\"]").remove();
-          if(dynmap.map.hasLayer(markers[name]['marker'])) {
-            dynmap.map.removeLayer(markers[name]['marker']);
-          }
+          landmarkHide(markers[name]);
         }
 
       }
@@ -63,9 +69,18 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
       // Remove markers that are still outdated
       $.each(markers, function(key, value) {
         if(markers[key]['outdated'] === true){
-          $(".landmarklist li[name=\""+data[i].name+"\"]").remove();
+          landmarkHide(markers[key]);
           markers[key]['marker'].remove();
           delete markers[key];
+        }
+      });
+
+      //fix positions of icons if not 14x14 pixels
+      $(".landmarkMarker img").each(function(){
+        var ml = -Math.round($(this).width()/2)+"px";
+        var mt = -Math.round($(this).width()/2)+"px";
+        if (($(this).parent().css("margin-left") !== ml) || ($(this).parent().css("margin-top") !== mt)){
+          $(this).parent().css("margin-left", ml).css("margin-top", mt);
         }
       });
 
@@ -73,7 +88,7 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
   });
 
   $(dynmap).bind('mapchanging', function() {
-    for(var name in markers){dynmap.map.removeLayer(markers[name]['marker']);}
+    for(var name in markers){landmarkHide(markers[name]);}
   });
 
   $(dynmap).bind('mapchanged', function() {
@@ -82,26 +97,89 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
       if (dynmap.world.name == data.world){
         var markerPosition = dynmap.getProjection().fromLocationToLatLng(new Location(data.world, data.x, data.y, data.z));
         markers[name]['marker'].setLatLng(markerPosition);
-        dynmap.map.addLayer(markers[name]['marker']);
+        landmarkShow(markers[name]);
       } else if(dynmap.map.hasLayer(markers[name]['marker'])) {
-        dynmap.map.removeLayer(markers[name]['marker']);
+        landmarkHide(markers[name]);
       }
     }
   });
 
+  function landmarkToggle(t){
+    if ($(".landmarklist li[name=\""+t+"\"] ul").is(":visible")){
+      for (var name in markers){
+        if (markers[name]['data'].type == t){
+          if (dynmap.map.hasLayer(markers[name]['marker'])){dynmap.map.removeLayer(markers[name]['marker']);}
+        }
+      }
+      $(".landmarklist li[name=\""+t+"\"] ul").hide("slow");
+    }else{
+      $(".landmarklist li[name=\""+t+"\"] ul").show("slow");
+      for (var name in markers){
+        if (markers[name]['data'].type == t){
+          if (dynmap.world.name == markers[name]['data'].world){
+            landmarkShow(markers[name]);
+          }
+        }
+      }
+    }
+  };
+  
+  function landmarkHide(m){
+    if (dynmap.map.hasLayer(m['marker'])){dynmap.map.removeLayer(m['marker']);}
+    $(".landmarktype.landmarktype_"+m['data'].type+" li[name=\""+m['data'].name+"\"]").remove();
+    if ($(".landmarklist li[name=\""+m['data'].type+"\"]").children().length == 0){
+      $(".landmarklist li[name=\""+m['data'].type+"\"]").remove();
+    }
+  };
+  
+  function landmarkShow(m){
+    if (!m['data'].type){m['data'].type = "Default";}
+    var type = m['data'].type;
+    var name = m['data'].name;
+    
+    if ($(".landmarklist li[name=\""+type+"\"]").length == 0){
+      var lastelem = $(".landmarklist").children().first();
+      var appendIt = false;
+      while ((lastelem.length > 0) && (lastelem.text().toLowerCase() < type.toLowerCase())){
+        lastelem = lastelem.next();
+      }
+      if (lastelem.length == 0){appendIt = true;}
+      if (appendIt){
+        $("<li name=\""+type+"\" />").append("<img src=\"images/landmark_"+type.toLowerCase()+".png\"> <span class=\"landmarktypename\">"+type+"</span><ul class=\"landmarktype landmarktype_"+type+"\"></ul>").appendTo(".landmarklist");
+      }else{
+        $("<li name=\""+type+"\" />").append("<img src=\"images/landmark_"+type.toLowerCase()+".png\"> <span class=\"landmarktypename\">"+type+"</span><ul class=\"landmarktype landmarktype_"+type+"\"></ul>").insertBefore(lastelem);
+      }
+    }
+    if ($(".landmarktype.landmarktype_"+type+" li[name=\""+name+"\"]").length == 0){
+      var lastelem = $(".landmarktype[name=\""+type+"\"]").children().first();
+      var appendIt = false;
+      while ((lastelem.length > 0) && (lastelem.text().toLowerCase() < data.name.toLowerCase())){
+        lastelem = lastelem.next();
+      }
+      if (lastelem.length == 0){appendIt = true;}
+      if (appendIt){
+        $("<li name=\""+name+"\" />").text(name).click(gotoLandmark).appendTo(".landmarktype.landmarktype_"+type);
+      }else{
+        $("<li name=\""+name+"\" />").text(name).click(gotoLandmark).insertBefore(lastelem);
+      }
+    }
+    if ($(".landmarktype.landmarktype_"+type+" li[name=\""+name+"\"]").is(":visible")){
+      dynmap.map.addLayer(m['marker']);
+    }
+  };
 
   function gotoLandmark(){
     dynmap.map.panTo(markers[$(this).attr("name")]['marker'].getLatLng());
-  }
+  };
 
-}
+};
 
 function createMarker(data){
   var markerPosition = dynmap.getProjection().fromLocationToLatLng(new Location(data.world, data.x, data.y, data.z));
   return new L.CustomMarker(markerPosition, { elementCreator: function() {
     var div = document.createElement('div');
     if (!data.type){data.type = "Default";}
-    $(div).addClass('Marker').addClass('landmarkMarker').css("background-image", "url(images/landmark_"+data.type.toLowerCase()+".png)").append($('<span/>').addClass('landmarkName').text(data.name));
+    $(div).addClass('Marker').addClass('landmarkMarker').append($('<img/>').attr("src", "images/landmark_"+data.type.toLowerCase()+".png")).append($('<span/>').addClass('landmarkName').text(data.name));
     return div;
   }});
 };
