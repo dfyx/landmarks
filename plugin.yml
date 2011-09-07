@@ -1,12 +1,18 @@
 name: Landmarks
 main: de.wecallit42.minecraft.landmarks.LandmarksPlugin
-version: 0.4
+version: 0.5
 
 commands:
   landmark:
     description: Set and modify landmarks.
     usage: |
            /<command> [landmark name] - Will set/modify landmark to your current position.
+           /landmarktyped [type] [landmark name] - Will set/modify a [type] type landmark to your current position.
+           /landmarksettype [type] [landmark name] - Will modify named landmark to change into [type].
+           /landmarkdelete [landmark name] - Will delete the named landmark.
+           /landmarklook [landmark name] - Will look at the named landmark.
+           /landmarkwarp [landmark name] - Will warp to the named landmark.
+           /landmarklist - Will list all landmarks plus their types and locations.
   landmarktyped:
     description: Set and modify typed landmarks.
     usage: |

@@ -1,5 +1,13 @@
 //Changelog:
 //
+//ThulinmaVersion 0.5:
+//- Changed looks of landmark list to match the rest of the interface
+//- Fixed bug that caused some unused landmark types to show up in the list sometimes
+//- Types are no longer shown as sublist if there is only one landmark of the type
+//- Fixed live handling of landmarks changing types
+//- Fixed live handling of landmark deletions
+//- Fixed inner sorting of sublists
+//
 //ThulinmaVersion 0.4:
 //- Added support for mixed icon sizes.
 //- Added support for sublists of types.
@@ -46,6 +54,11 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 
       for(i = 0; i < data.length; i++){
         var name = data[i].name;
+        //changed type? delete and re-create
+        if (markers[name] && markers[name]['data'].type != data[i].type){
+          landmarkHide(markers[name]);
+          delete markers[name];
+        }
         if(markers[name]){
           var markerPosition = dynmap.getProjection().fromLocationToLatLng(new Location(data[i].world, data[i].x, data[i].y, data[i].z));
           markers[name]['outdated'] = false;
@@ -70,7 +83,6 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
       $.each(markers, function(key, value) {
         if(markers[key]['outdated'] === true){
           landmarkHide(markers[key]);
-          markers[key]['marker'].remove();
           delete markers[key];
         }
       });
@@ -123,13 +135,28 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
       }
     }
   };
+
+  function landmarkHeading(t){
+    if ($("ul.landmarktype_"+t).length > 0){
+      if ($("ul.landmarktype_"+t).children().length > 1){
+        //heading displayed
+        $(".landmarklist li[name=\""+t+"\"]").children("img, span").show();
+        $("ul.landmarktype_"+t).children().children("img").remove();
+      }else{
+        //heading hidden
+        $(".landmarklist li[name=\""+t+"\"]").children("img, span").hide();
+        $("ul.landmarktype_"+t).children().not(":has(img)").prepend("<img src=\"images/landmark_"+t.toLowerCase()+".png\">");
+      }
+    }
+  }
   
   function landmarkHide(m){
     if (dynmap.map.hasLayer(m['marker'])){dynmap.map.removeLayer(m['marker']);}
     $(".landmarktype.landmarktype_"+m['data'].type+" li[name=\""+m['data'].name+"\"]").remove();
-    if ($(".landmarklist li[name=\""+m['data'].type+"\"]").children().length == 0){
+    if ($("ul.landmarktype_"+m['data'].type).children().length == 0){
       $(".landmarklist li[name=\""+m['data'].type+"\"]").remove();
     }
+    landmarkHeading(m['data'].type);
   };
   
   function landmarkShow(m){
@@ -151,14 +178,14 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
       }
     }
     if ($(".landmarktype.landmarktype_"+type+" li[name=\""+name+"\"]").length == 0){
-      var lastelem = $(".landmarktype[name=\""+type+"\"]").children().first();
+      var lastelem = $(".landmarktype_"+type).children().first();
       var appendIt = false;
-      while ((lastelem.length > 0) && (lastelem.text().toLowerCase() < data.name.toLowerCase())){
+      while ((lastelem.length > 0) && (lastelem.text().toLowerCase() < name.toLowerCase())){
         lastelem = lastelem.next();
       }
       if (lastelem.length == 0){appendIt = true;}
       if (appendIt){
-        $("<li name=\""+name+"\" />").text(name).click(gotoLandmark).appendTo(".landmarktype.landmarktype_"+type);
+        $("<li name=\""+name+"\" />").text(name).click(gotoLandmark).appendTo(".landmarktype_"+type);
       }else{
         $("<li name=\""+name+"\" />").text(name).click(gotoLandmark).insertBefore(lastelem);
       }
@@ -166,6 +193,7 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
     if ($(".landmarktype.landmarktype_"+type+" li[name=\""+name+"\"]").is(":visible")){
       dynmap.map.addLayer(m['marker']);
     }
+    landmarkHeading(m['data'].type);
   };
 
   function gotoLandmark(){

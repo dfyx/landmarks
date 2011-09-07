@@ -21,25 +21,31 @@
 }
 
 .landmarklist{
-  max-height:200px;
+  max-height:300px;
   overflow:auto;
   list-style-type: none;
   padding:0px;
   margin:0px;
 }
+
 .landmarktype li{
   line-height:14px;
   overflow-x:hidden;
   cursor:pointer;
   padding-left:20px!important;
 }
+
 .landmarktypename{
   overflow-x:hidden;
   cursor:pointer;
+  font-weight: bold;
+
+  background: rgba(128,128,128,0.5);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 3px;
+  -moz-border-radius: 3px;
 }
-.landmarktypename:hover{
-  color:red;
-}
+
 .landmarktype li:hover{
-  color:red;
+  background: rgba(64,64,64,0.6);
 }

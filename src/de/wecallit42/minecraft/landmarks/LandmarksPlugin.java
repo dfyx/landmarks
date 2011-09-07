@@ -31,7 +31,7 @@ public class LandmarksPlugin extends JavaPlugin {
   private static final String LOG_PREFIX = "[Landmarks] ";
   private static final String CHAT_PREFIX = "[Landmarks] ";
 
-  private String markersFile = "markers.json";
+  private String markersFile = "../dynmap/web/markers.json";
   private Logger log;
   private Configuration configuration;
   private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
@@ -346,17 +346,23 @@ public class LandmarksPlugin extends JavaPlugin {
   @SuppressWarnings("unchecked") //prevent eclipse whining about data.add()
 
   private void saveJSON() {
-    File file = new File(markersFile);
-    if (!file.isAbsolute()) {
-      file = new File(getDataFolder(), markersFile);
-    }
-
+    //put data in an array
     JSONArray data = new JSONArray();
     for (JSONObject marker : markers.values()) {
       data.add(marker);
     }
 
+    //attempt to write array to file
     try {
+      File file = new File(markersFile);
+      if (!file.isAbsolute()) {
+        getDataFolder().mkdirs();
+        file = new File(getDataFolder(), markersFile);
+      }
+      File parent = file.getParentFile();
+      if(!parent.exists() && !parent.mkdirs()){
+          throw new IllegalStateException("Couldn't create dir: " + parent);
+      }
       BufferedWriter writer = new BufferedWriter(new FileWriter(file));
       writer.write(data.toString());
       writer.close();
