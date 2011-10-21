@@ -1,4 +1,4 @@
-package de.wecallit42.minecraft.landmarks;
+package com.thulinma.landmarks;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,23 +9,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.logging.Logger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
-import org.bukkit.plugin.Plugin;
 
 public class LandmarksPlugin extends JavaPlugin {
   private static final String LOG_PREFIX = "[Landmarks] ";
@@ -33,10 +28,8 @@ public class LandmarksPlugin extends JavaPlugin {
 
   private String markersFile = "../dynmap/web/markers.json";
   private Logger log;
-  private Configuration configuration;
+  private FileConfiguration configuration;
   private HashMap<String, JSONObject> markers = new HashMap<String, JSONObject>();
-
-  private PermissionHandler permissions;
 
   public void onDisable() {
     saveJSON();
@@ -47,13 +40,10 @@ public class LandmarksPlugin extends JavaPlugin {
   public void onEnable() {
     log = Logger.getLogger("Minecraft");
 
-    configuration = new Configuration(new File(this.getDataFolder(),
-        "config.yml"));
-    configuration.load();
+    configuration = this.getConfig();
     markersFile = configuration.getString("markersfile", markersFile);
 
     loadJSON();
-    setupPermissions();
 
     PluginDescriptionFile pdfFile = getDescription();
     log.info(LOG_PREFIX + "Landmarks " + pdfFile.getVersion() + " enabled.");
@@ -253,60 +243,36 @@ public class LandmarksPlugin extends JavaPlugin {
 
   private boolean canEdit(String name, CommandSender sender) {
     if (!markers.containsKey(name)){return false;}
-    if (hasPermission(sender, "landmarks.modify.all")){return true;}
-    if (hasPermission(sender, "landmarks.modify."+name.toLowerCase().replace(" ", "_"))){return true;}
-    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.modify.own")){return true;}
+    if (sender.hasPermission("landmarks.modify.all")){return true;}
+    if (sender.hasPermission("landmarks.modify."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && sender.hasPermission("landmarks.modify.own")){return true;}
     return false;
   }
 
   private boolean canLook(String name, CommandSender sender) {
     if (!markers.containsKey(name)){return false;}
-    if (hasPermission(sender, "landmarks.look.all")){return true;}
-    if (hasPermission(sender, "landmarks.look."+name.toLowerCase().replace(" ", "_"))){return true;}
-    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.look.own")){return true;}
+    if (sender.hasPermission("landmarks.look.all")){return true;}
+    if (sender.hasPermission("landmarks.look."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && sender.hasPermission("landmarks.look.own")){return true;}
     return false;
   }
 
   private boolean canWarp(String name, CommandSender sender) {
     if (!markers.containsKey(name)){return false;}
-    if (hasPermission(sender, "landmarks.warp.all")){return true;}
-    if (hasPermission(sender, "landmarks.warp."+name.toLowerCase().replace(" ", "_"))){return true;}
-    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && hasPermission(sender, "landmarks.warp.own")){return true;}
+    if (sender.hasPermission("landmarks.warp.all")){return true;}
+    if (sender.hasPermission("landmarks.warp."+name.toLowerCase().replace(" ", "_"))){return true;}
+    if (markers.get(name).get("owner").equals(((Player)sender).getName()) && sender.hasPermission("landmarks.warp.own")){return true;}
     return false;
   }
 
   private boolean canCreate(CommandSender sender) {
-    if (hasPermission(sender, "landmarks.add")){return true;}
+    if (sender.hasPermission("landmarks.add")){return true;}
     return false;
   }
 
   @SuppressWarnings("unchecked") //prevent warning for j.put()
   private void setProperty(JSONObject j, String property, Object value){
     j.put(property, value);
-  }
-
-  private void setupPermissions() {
-    Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
-
-    if (permissions == null) {
-      if (test != null) {
-        permissions = ((Permissions) test).getHandler();
-      } else {
-        log.info(LOG_PREFIX + "Permission system not detected, no checks");
-      }
-    }
-  }
-
-  private boolean hasPermission(CommandSender sender, String node) {
-    if (!(sender instanceof Player)) {
-      //console has all permissions, always
-      return true;
-    }
-    if(permissions == null) {
-      return true;
-    } else {
-      return permissions.has((Player)sender, node);
-    }
   }
 
   private void loadJSON() {
