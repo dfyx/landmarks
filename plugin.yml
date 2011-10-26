@@ -1,6 +1,6 @@
 name: Landmarks
 main: com.thulinma.landmarks.LandmarksPlugin
-version: 0.6
+version: 0.7
 
 commands:
   landmark:
@@ -37,3 +37,12 @@ commands:
     description: List all landmarks.
     usage: |
            /<command> - Will list all landmarks plus their types and locations.
+permissions:
+    landmarks.add:
+        default: op
+    landmarks.warp.all:
+        default: op
+    landmarks.look.all:
+        default: op
+    landmarks.modify.all:
+        default: op
