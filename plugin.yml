@@ -1,11 +1,48 @@
 name: Landmarks
-main: de.wecallit42.minecraft.landmarks.LandmarksPlugin
-version: 0.2
+main: com.thulinma.landmarks.LandmarksPlugin
+version: 0.7
 
 commands:
   landmark:
-    description: Set and remove landmarks.
+    description: Set and modify landmarks.
     usage: |
-           /<command> add [name]
-           /<command> set [name]
-           /<command> del [name]
+           /<command> [landmark name] - Will set/modify landmark to your current position.
+           /landmarktyped [type] [landmark name] - Will set/modify a [type] type landmark to your current position.
+           /landmarksettype [type] [landmark name] - Will modify named landmark to change into [type].
+           /landmarkdelete [landmark name] - Will delete the named landmark.
+           /landmarklook [landmark name] - Will look at the named landmark.
+           /landmarkwarp [landmark name] - Will warp to the named landmark.
+           /landmarklist - Will list all landmarks plus their types and locations.
+  landmarktyped:
+    description: Set and modify typed landmarks.
+    usage: |
+           /<command> [type] [landmark name] - Will set/modify a [type] type landmark to your current position.
+  landmarksettype:
+    description: Modify landmarks types.
+    usage: |
+           /<command> [type] [landmark name] - Will modify named landmark to change into [type].
+  landmarkdelete:
+    description: Remove landmarks.
+    usage: |
+           /<command> [landmark name] - Will delete the named landmark.
+  landmarklook:
+    description: Look at direction of landmarks.
+    usage: |
+           /<command> [landmark name] - Will look at the named landmark.
+  landmarkwarp:
+    description: Warp to landmarks.
+    usage: |
+           /<command> [landmark name] - Will warp to the named landmark.
+  landmarklist:
+    description: List all landmarks.
+    usage: |
+           /<command> - Will list all landmarks plus their types and locations.
+permissions:
+    landmarks.add:
+        default: op
+    landmarks.warp.all:
+        default: op
+    landmarks.look.all:
+        default: op
+    landmarks.modify.all:
+        default: op
