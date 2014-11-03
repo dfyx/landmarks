@@ -19,21 +19,17 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 			for(i = 0; i < data.length; i++)
 			{
 				var name = data[i].name;
-				if(markers[name])
-				{
-					var markerPosition = dynmap.map.getProjection().fromWorldToLatLng(data[i].x, data[i].y, data[i].z);
-					markers[name]['outdated'] = false;
-					markers[name]['marker'].setPosition(markerPosition);
-					markers[name]['data'] = data[i];
-					markers[name]['marker'].toggle(dynmap.world.name == data[i].world);
+				if(!markers[name]) {
+					markers[name] = {};
 				}
-				else
-				{
-					markers[name] = {}
-					markers[name]['data'] = data[i];
+				
+				if (!markers[name]['marker']) {
 					markers[name]['marker'] = createMarker(data[i]);
-					markers[name]['marker'].toggle(dynmap.world.name == data[i].world);
 				}
+				
+				markers[name]['outdated'] = false;
+				markers[name]['data'] = data[i];
+				updateMarker(markers[name]['marker'], data[i])
 			}
 			
 			// Remove markers that are still outdated
@@ -50,10 +46,9 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 	$(dynmap).bind('mapchanged', function() {
 		for(var name in markers)
 		{
-			var data = markers[name]['data'];
-			var markerPosition = dynmap.map.getProjection().fromWorldToLatLng(data.x, data.y, data.z);
-			markers[name]['marker'].setPosition(markerPosition);
-			markers[name]['marker'].toggle(dynmap.world.name == data.world);
+			updateMarker(dynmap,
+				markers[name]['marker'],
+				markers[name]['data'])
 		}
 	});
 	
@@ -66,17 +61,29 @@ componentconstructors['landmarks'] = function(dynmap, configuration) {
 	}
 }
 
+function markerPosition(data) {
+	return dynmap.getProjection().fromLocationToLatLng(data);
+}
+
+function updateMarker(marker, data) {
+	marker.setLatLng(markerPosition(data));
+	$(marker._element).toggle(dynmap.world.name == data.world);
+}
+
 function createMarker(data)
 {
-	var markerPosition = dynmap.map.getProjection().fromWorldToLatLng(data.x, data.y, data.z);
-	return new CustomMarker(markerPosition, dynmap.map, function(div) {
+	var marker = new L.CustomMarker(markerPosition(data), { elementCreator: function() {
+		var div = document.createElement('div');
 		$(div)
 			.addClass('Marker')
 			.addClass('landmarkMarker')
 			.append($('<span/>')
 				.addClass('landmarkName')
 				.text(data.name));
-	});
+		return div;
+	}});
+	dynmap.map.addLayer(marker);
+	return marker;
 }
 
 function onShowMarkers()
